@@ -16,7 +16,10 @@ What `hyperparameter optimization` does is provide a simple way to provide an ob
 
 ### 1. Provide a single, or series of user_prompts as tasks for the LLM: 
 ```python
-user_prompts = ["generate a summary from this article: {{article}}", "take a deep breath and generate a summary from this article: {{article}}..."]
+user_prompts = [
+    "generate a summary from this article: {{article}}", 
+    "take a deep breath and generate a summary from this article: {{article}}..."
+]
 ```
 
 ### 2. Provide a desired output:
