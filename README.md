@@ -73,4 +73,4 @@ An HTML page like [index.html](index.html) will be generated, which contains a r
 
 ### Other questions
 
-[me@ethan.dev](me@ethan.dev)
+[me@ethan.dev](mailto:me@ethan.dev)
