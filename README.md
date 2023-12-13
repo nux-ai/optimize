@@ -36,14 +36,14 @@ desired_output = "This article does xyz..."
 nux = NuxAI(model="chatgpt", api_key="***")
 
 results = nux.optimize(
-    interval=0.1, 
+    max_combinations=100, 
     user_prompts=user_prompts, 
     desired_output=desired_output
 )
 ```
 
 - `api_key`: Your OpenAI api key
-- `interval`: This is the separation between each hyperparameter, for example an interval of `0.1` will generate `temperature` combinations of `0.1, 0.2, ...`. The lower the number, the more possible combinations which creates more API calls to GPT.
+- `max_combinations`: This is the separation between each hyperparameter, for example an interval of `0.1` will generate `temperature` combinations of `0.1, 0.2, ...`. The lower the number, the more possible combinations which creates more API calls to GPT.
 - `user_prompt`: The various instructions as tasks provided to the model. Each of these will generate an entirely different set of hyperparameter settings, as such it is logarithmically expensive. 
 - `desired_output`: Think of this like a [Goal Seek](https://blog.hubspot.com/marketing/goal-seek-excel#:~:text=What%20is%20the%20Goal%20Seek,to%20match%20your%20specified%20result.) formula. You are providing a goal and it works backwards from it
 
@@ -73,4 +73,4 @@ An HTML page like [index.html](index.html) will be generated, which contains a r
 
 ### Other questions
 
-email me: me@ethan.dev
+[me@ethan.dev](me@ethan.dev)

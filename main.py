@@ -2,6 +2,9 @@ import hnswlib
 import numpy as np
 from sentence_transformers import SentenceTransformer
 import time
+import uuid
+import json
+import os
 
 from models import (
     ChatGPT
@@ -13,10 +16,23 @@ class NuxAI:
         self.llm = model
         self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
         self.api_key = api_key
-        # edit this with other models
+        # edit this when we have other models
         self.supported_models = {
             'chatgpt': ChatGPT(api_key)
         }
+    
+    def _append_to_json_file(file_path, obj):
+        data = []
+        if os.path.exists(file_path):
+            with open(file_path, 'r') as f:
+                try:
+                    data = json.load(f)
+                except json.JSONDecodeError:
+                    pass
+        data.append(obj)
+        with open(file_path, 'w') as f:
+            json.dump(data, f)
+
 
     def _embed(self, text):
         return self.embedding_model.encode(text)
@@ -31,45 +47,32 @@ class NuxAI:
         self.index.init_index(max_elements=max_elements, ef_construction=200, M=16)
 
 
-    def optimize(self, interval, user_prompts, desired_output):
+    def optimize(self, max_combinations, user_prompts, desired_output):
         # set everything up
         model_handler = self.supported_models[self.llm]
         self._init_index(len(user_prompts))
 
+        # generate N number of hyperparameter combinations
+        param_combos = model_handler.get_hyperparameter_combinations(max_combinations)
 
-        response = model_handler.generate(user_prompts[0], {'temperature': 0.1})
-
-        # Generate hyperparameter combinations (for simplicity, using only 'temperature' in this example)
-        temperature_range = [round(x * interval, 1) for x in range(1, int(1/interval) + 1)]
+        # each param and user prompt pair will generate a new response and embedding
+        for params in param_combos:
+            for prompt in user_prompts:
+                response = model_handler.generate(prompt, params)
+                obj = {
+                    'id': str(uuid.uuid4()),
+                    'user_prompt': prompt,
+                    'hyperparams': params,
+                    'model_response': response,
+                    'embedding': self._embed(response)
+                }
+                # store the embedding in the index
+                self.index.add_items(obj['embedding'])
+                # store in a json
+                self._append_to_json_file('data.json', obj)
         
-        results = []
-        for prompt in user_prompts:
-            for temp in temperature_range:
-                hyperparams = {'temperature': temp}
-                response = self.generate_mock_response(prompt, hyperparams)
-                embedding = self.sentence_model.encode(response)
-                idx = len(results)  # Unique index for each response
-                self.hnsw_index.add_items(embedding, idx)
-                results.append({'prompt': prompt, 'hyperparams': hyperparams, 'response': response})
+        # query the index for the closest response
+        query_embedding = self._embed(desired_output)
+        ids, distances = self.index.knn_query(query_embedding, k=1)
+        return ids, distances
 
-        # Embedding for desired output
-        desired_embedding = self.sentence_model.encode(desired_output)
-        labels, distances = self.hnsw_index.knn_query(desired_embedding, k=len(results))
-
-        # Organizing results
-        optimized_results = []
-        for label, distance in zip(labels[0], distances[0]):
-            optimized_results.append({
-                'prompt': results[label]['prompt'],
-                'hyperparams': results[label]['hyperparams'],
-                'response': results[label]['response'],
-                'similarity': 1 - distance  # Cosine similarity
-            })
-
-        return optimized_results
-
-# Example usage
-nux = NuxAI(model="chatgpt", api_key="***")
-user_prompts = [
-    "generate a summary from this article: {{article}}", 
-    "take a deep breath and generate a
